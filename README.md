@@ -1,6 +1,6 @@
 # ngram-gen
 
-N-gram text generation and analysis.""".
+Generate n-grams from text.
 
 Zero dependencies. Python 3.8+.
 
