@@ -1,18 +1,34 @@
 #!/usr/bin/env python3
-"""ngram_gen - Generate n-grams from text."""
-import sys, collections
+"""ngram_gen - N-gram generation and frequency analysis."""
+import sys, argparse, json, re
+from collections import Counter
 
-def ngrams(words, n=2):
-    return [tuple(words[i:i+n]) for i in range(len(words)-n+1)]
+def tokenize(text):
+    return re.findall(r"\b\w+\b", text.lower())
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2: print("Usage: ngram_gen <file> [n] [--top N]"); sys.exit(1)
-    with open(sys.argv[1]) as f: words = f.read().lower().split()
-    n = int(sys.argv[2]) if len(sys.argv) > 2 else 2
-    top = 20
-    for i, a in enumerate(sys.argv):
-        if a == "--top" and i+1 < len(sys.argv): top = int(sys.argv[i+1])
-    grams = ngrams(words, n)
-    counter = collections.Counter(grams)
-    for gram, count in counter.most_common(top):
-        print(f"{count:6d}  {' '.join(gram)}")
+def char_ngrams(text, n):
+    return [text[i:i+n] for i in range(len(text)-n+1)]
+
+def word_ngrams(tokens, n):
+    return [" ".join(tokens[i:i+n]) for i in range(len(tokens)-n+1)]
+
+def main():
+    p = argparse.ArgumentParser(description="N-gram generator")
+    p.add_argument("text", help="Input text or @filename")
+    p.add_argument("-n", type=int, default=2, help="N-gram size")
+    p.add_argument("--type", choices=["word","char"], default="word")
+    p.add_argument("--top", type=int, default=20)
+    args = p.parse_args()
+    text = args.text
+    if text.startswith("@"):
+        with open(text[1:]) as f: text = f.read()
+    if args.type == "word":
+        tokens = tokenize(text)
+        grams = word_ngrams(tokens, args.n)
+    else:
+        grams = char_ngrams(text.lower(), args.n)
+    freq = Counter(grams)
+    top = freq.most_common(args.top)
+    print(json.dumps({"n": args.n, "type": args.type, "total_ngrams": len(grams), "unique": len(freq), "top": [{"ngram": ng, "count": c} for ng, c in top]}, indent=2))
+
+if __name__ == "__main__": main()
